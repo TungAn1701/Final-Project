@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # 1. DATABASE & STORAGE (PostgreSQL)
+  # ============================================================================
+  db:
+    image: postgres:15-alpine
+    container_name: insole-postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-insole_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-insole_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-insole_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-insole_user} -d ${POSTGRES_DB:-insole_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - insole-network
+
+  # ============================================================================
+  # 2. EVENT STREAMING & CACHE (Redis)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: insole-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - insole-network
+
+  # ============================================================================
+  # 3. INGESTION MICROSERVICE (Java Spring Boot 3 - Port 8081)
+  # ============================================================================
+  ingestion-service:
+    build:
+      context: ./backend_services
+      dockerfile: ingestion-service/Dockerfile
+    container_name: insole-ingestion-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - CUSTOMER_SERVICE_URL=http://customer-service:8082
+      - SERVER_PORT=8081
+    networks:
+      - insole-network
+
+  # ============================================================================
+  # 4. CUSTOMER & SESSION MANAGEMENT SERVICE (Java Spring Boot 3 JPA - Port 8082)
+  # ============================================================================
+  customer-service:
+    build:
+      context: ./backend_services
+      dockerfile: customer-service/Dockerfile
+    container_name: insole-customer-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      - DATABASE_URL=jdbc:postgresql://db:5432/${POSTGRES_DB:-insole_db}
+      - POSTGRES_USER=${POSTGRES_USER:-insole_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-insole_secure_password}
+      - SERVER_PORT=8082
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - insole-network
+
+  # ============================================================================
+  # 5. CENTRAL API GATEWAY (Spring Cloud Gateway + Spring Security - Port 8000)
+  # ============================================================================
+  api-gateway:
+    build:
+      context: ./backend_services
+      dockerfile: api-gateway/Dockerfile
+    container_name: insole-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - INGESTION_SERVICE_URL=http://ingestion-service:8081
+      - INGESTION_WS_URL=ws://ingestion-service:8081
+      - CUSTOMER_SERVICE_URL=http://customer-service:8082
+      - SERVER_PORT=8000
+    depends_on:
+      - ingestion-service
+      - customer-service
+    networks:
+      - insole-network
+
+networks:
+  insole-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

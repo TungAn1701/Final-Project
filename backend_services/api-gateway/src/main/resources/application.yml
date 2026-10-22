@@ -1,0 +1,74 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        # 1. Ingestion Microservice Route
+        - id: ingestion-service-route
+          uri: ${INGESTION_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/ingest/**
+
+        # 2. Ingestion WebSocket Proxy
+        - id: websocket-stream-route
+          uri: ${INGESTION_WS_URL:ws://localhost:8081}
+          predicates:
+            - Path=/ws/**
+
+        # 3. Customer & Patient Management Service Route
+        - id: customer-service-route
+          uri: ${CUSTOMER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/customers/**, /api/v1/patients/**, /api/v1/sessions/**
+
+        # 4. OpenAPI Docs Routes for Swagger UI Aggregation
+        - id: ingestion-docs-route
+          uri: ${INGESTION_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api-docs/ingestion/**
+          filters:
+            - RewritePath=/api-docs/ingestion(?<segment>.*), /v3/api-docs${segment}
+
+        - id: customer-docs-route
+          uri: ${CUSTOMER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api-docs/customer/**
+          filters:
+            - RewritePath=/api-docs/customer(?<segment>.*), /v3/api-docs${segment}
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Customer & Session Service
+        url: /api-docs/customer
+      - name: Sensor Ingestion Service
+        url: /api-docs/ingestion
+      - name: Gateway Auth Service
+        url: /v3/api-docs
+
+jwt:
+  secret: "SmartOrthoticInsoleSuperSecureSecretKeyForJwtAuthenticationSpringSecurity2026!"
+  expirationMs: 86400000 # 24 hours
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

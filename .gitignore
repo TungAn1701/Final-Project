@@ -1,0 +1,46 @@
+# Build Artifacts
+target/
+*.class
+*.jar
+*.war
+*.ear
+.m2/
+
+# Environment Variables & Config
+.env*
+
+# Test scripts
+test_*.py
+tests/
+
+# Reference Roadmap & Docs (không commit nếu chỉ muốn giữ backend)
+PROJECT_BLUEPRINT_AND_ROADMAP.md
+
+# Python & AI Cache
+__pycache__/
+*.py[cod]
+venv/
+
+# Mobile App
+mobile_app/
+
+# Firmware / C++
+firmware_ble/
+*.bin
+*.hex
+*.elf
+.pio/
+
+# Database & Generated Files
+*.stl
+*.obj
+*.db
+*.sqlite3
+data/
+
+# IDE & OS
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
