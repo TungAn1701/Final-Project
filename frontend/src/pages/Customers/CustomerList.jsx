@@ -75,7 +75,7 @@ const SAMPLE_PATIENTS = [
 
 export const CustomerList = () => {
   const navigate = useNavigate();
-  const { isClinician } = useAuth();
+  const { user, isClinician } = useAuth();
 
   const [customers, setCustomers] = useState([]);
   const [search, setSearch] = useState('');

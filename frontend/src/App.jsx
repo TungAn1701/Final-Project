@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth, ROLES } from './context/AuthContext';
 import { ProtectedRoute } from './components/Common/ProtectedRoute';
+import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Login } from './pages/Auth/Login';
 import { CustomerList } from './pages/Customers/CustomerList';
@@ -22,8 +23,9 @@ const RootRedirector = () => {
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <Routes>
           {/* Public Authentication Route */}
           <Route path="/login" element={<Login />} />
 
@@ -75,8 +77,9 @@ export function App() {
           </Route>
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
-  );
+    </ErrorBoundary>
+  </AuthProvider>
+);
 }
 
 export default App;
