@@ -38,6 +38,12 @@ firmware_ble/
 *.sqlite3
 data/
 
+# Frontend Web
+node_modules/
+dist/
+.vite/
+*.local
+
 # IDE & OS
 .vscode/
 .idea/
